@@ -1,0 +1,196 @@
+---
+title: "PSTAT160A"
+output: html_document
+date: "2022-12-06"
+---
+
+```{r}
+library("markovchain")
+library("expm")
+library("matrixcalc")
+```
+
+
+
+Problem 1.32 a)
+```{r}
+n <- 100000
+p <- .5
+x1 <- rbinom(100000, 1, .5)
+x2 <- rbinom(100000, 1, .5)
+x3 <- rbinom(100000, 1, .5)
+x4 <- x1 + x2 + x3 
+mean(x4)
+var(x4)
+
+```
+In this problem x1, x2, and x3 are the three fair coins that are being flipped 100,000 times each. Coin flips follow a binomial distribution since they are independent, can only be a success or failure, and have the same probability of success each time. Each time there is a .5 probability of a head being flipped. x4 is the variable that counts the number of heads each time. The mean number of heads out of 3 flips is 1.49434 and the variance is .7558955. 
+
+
+Problem 1.32 b)
+```{R}
+n <- 100000
+p <- .75
+x1 <- rbinom(100000, 1, .75)
+x2 <- rbinom(100000, 1, .75)
+x3 <- rbinom(100000, 1, .75)
+x4 <- x1 + x2 + x3 
+mean(x4)
+var(x4)
+```
+From this we can see that if we change the probability of a heads occuring to .75, the average number of heads out of three flips increases to 2.24938 and the variance will be .5606952.
+
+
+Problem 2.25
+```{r}
+Dolphin = new("markovchain", states = c("Socializing", "Traveling", "Milling", "Feeding", "Resting"),
+transitionMatrix = matrix(data = c(.84, .11, .01, .04, .00,
+.03, .80, .04, .10, .03,
+.01, .15, .70, .07, .07,
+.03, .19, .02, .75, .01,
+.03, .09, .05, .00, .83), byrow = TRUE, nrow = 5),
+name = "Dolphin Behavior")
+
+Dolphin^10000
+```
+After simulating the original transition matrix that we were provided for 10,000 steps, we see the limiting distribution as shown above. From the limiting distribution it is apparent that over time, the proportion of time that dolphins in Patagonia, Argentina spend socializing is .1478, traveling is .4149, milling is .0955, feeding is .2163, and resting is .1252.
+
+
+Problem 3.63 a)
+```{r}
+Wind = new("markovchain", states = c("1", "2", "3", "4", "5", "6", "7"),
+transitionMatrix = matrix(data = c(.756, .113, .129, .002, 0, 0, 0,
+.174, .821, .004, .001, 0, 0, 0,
+.141, .001, .776, .082, 0, 0, 0,
+.003, 0, .192, .753, .052, 0, 0,
+0, 0, .002, .227, .735, .036, 0,
+0, 0, 0, .007, .367, .604, .022,
+0, 0, 0, 0, .053, .158, .789), byrow = TRUE, nrow = 7),
+name = "Hourly Wind Speeds")
+
+Wind^10000
+
+
+data <- c(.756, .113, .129, .002, 0, 0, 0,
+.174, .821, .004, .001, 0, 0, 0,
+.141, .001, .776, .082, 0, 0, 0,
+.003, 0, .192, .753, .052, 0, 0,
+0, 0, .002, .227, .735, .036, 0,
+0, 0, 0, .007, .367, .604, .022,
+0, 0, 0, 0, .053, .158, .789)
+Wind_ <- matrix(data, nrow = 7, ncol = 7, byrow = TRUE)
+
+matrix.power(Wind_, 10000)
+```
+The proportion of time that the highest wind speed is visited is .00029 and the the proportion that the lowest wind speed is visited in .32458. We have two matrices that both display the same results. The first one is made by installing the markovchain package and creating a matrix with a title and labels. I then used ^ to take a high power. The second matrix is made with the matrixcalc package and the matrix.power() function.
+
+
+3.63 b)
+```{r}
+Wind^100000
+```
+From raising our initial transition matrix to the 100,000 power, we see that the proportion of time that the chain visits state 1 is .3245, state 2 is .2066, state 3 is .3039, state 4 is .1318, state 5 is .0298, state 6 is .0028, state 7 is .0002.
+
+
+Problem 4.30
+```{r}
+initial <- c(1/4, 1/4, 1/2)
+
+mean <- 0*(1/4) +1*(1/4)+2*(1/2)
+print(mean)
+
+# G(s) = 1/4 + (1/4)S + (1/2)S^2
+# 0 = 1/4 - (3/4)S + (1/2)S^2
+
+polyroot(c(1/4, -3/4, 1/2))
+
+set.seed(1000)
+
+branch <- function(n) {
+  x <- c(1,rep(0, n))
+  for (i in 2:(n + 1)) {
+    x[i] <- sum( sample(0:2, x[i - 1], replace = TRUE, prob = initial))
+  }
+  return(x) }
+
+branch(20)
+
+sim <- replicate(10000, branch(20)[21])
+sum(sim == 0)/10000
+
+```
+Since the mean of the offspring distribution is 1.25, which is greater than 1,it is a supercritical case. Thus G(s) = 1/4 + S(1/4) + S^2(1/2) and we get the quadratic formula 0 = 1/4 - (3/4)S + (1/2)S^2 where the smallest positive root is .5. After simulating the branching process for 10,000 times I get an extinction probability of .4956.
+
+
+Problem 5.19
+```{r}
+trials <- 10000
+n <- 50
+p <- 1/4
+simulation <- numeric(trials)
+
+for (k in 1:trials) {
+  state <- 0
+  # run chain for 60 steps to be near stationarity
+for (i in 1:100) {
+  x <- sample(0:n, 1)
+  y <- factorial(state)*factorial(n-state)/(factorial(x)*factorial(n-x))*(p/(1-p))^(x-state)
+  if (runif(1) < y) state <- x
+}
+  
+if (state >= 10 & state <= 15) simulation[k] <- 1 else simulation[k] <- 0
+}
+mean(simulation)  # estimate of P(10 <= X <= 15)
+
+# exact probability
+pbinom(15, n, p) - pbinom(9, n, p)
+```
+
+
+Problem 5.18
+```{r}
+
+alg = function(x){exp( - ((x-1)^2)/2) + exp( - ((x - 4)^2)/2)}
+
+func = function(x){
+y = runif(1, 0, 5)
+if (runif(1) > alg(y)/alg(x)) y =  x
+return(y)}
+
+set.seed(1000)
+
+x = rep(0, 10000)
+for (i in 2:10000){
+  x[i] = func(x[i - 1])
+}
+
+mean(x)
+var(x)
+```
+From this we see that the mean of x is approximately 2.501146 and the variance of x is approximately 2.10167. Alg takes in the density function that we are given. y is initialized to a random value from uniform distribution bounded by 0 and 5. Set.seed is used to get the same random values each time. We then replicate our function 10000 times to get the mean and variance.
+
+```{r}
+
+prob=seq(from=0,to=1,by=0.01)
+n=seq(from=1,to=100,by=1)
+#length(pr)
+p=prob[1/3] ## choose any valur of p to generate random sample##
+x=p*(1-p)^(n-1)
+
+
+pr=seq(from=0.5,to=1,by=0.01)
+n=seq(from=1,to=100,by=1)
+p=prob[1/3]
+p
+px=p*(1-p)^(n-1)
+
+mean(px)
+var(px)
+```
+
+
+
+
+
+
+
